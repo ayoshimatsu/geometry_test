@@ -73,7 +73,7 @@ if __name__ == '__main__':
     x_data = [1, 2, 3, 4, 5, 6, 7, 10]
     y_data = [3, 5, 4, 6, 4, 7, 9, 9]
     x_coordinate = np.arange(1, x_data[-1]+0.1, 0.1)
-    y_predict = bSplineInterpolation(x_coordinate, x_data, y_data, 2)
+    y_predict = bSplineInterpolation(x_coordinate, x_data, y_data, 3)
     plt.plot(x_coordinate, y_predict, color="blue")
     plt.scatter(x_data, y_data, color="red")
     plt.grid(True)
