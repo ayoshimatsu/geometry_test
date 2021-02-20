@@ -60,12 +60,13 @@ def createTable(aX_data, aY_data, DY1, DYN):  # ■ 表の生成
         doubleIntervals[ii] -= intervals[i] * T
     for i in range(numX - 2, 0, -1):
         Table[i] = (Table[i] - intervals[i] * Table[i+1]) / doubleIntervals[i]
+    Table = 6 * Table  # T: numpy array
     return Table
 
 def Fval(X):
     return (X*X-1) * X  # ■ F値
 
-def unitInt(XN, X, Y, Table):  # ■単一補間
+def unitInt(XN, X, Y, Table):  # 単一補間
     N = len(X)
     i = 0
     j = N-1
@@ -90,20 +91,74 @@ def interp(X, Y, Table):  # 補間
     for i in range(NN):
         XX[i] = XN
         YY[i] = unitInt(XN, X, Y, Table)
+        print("YY: ", XX[i], YY[i])
         XN += 0.1
     return [XX, YY]
 
-def BSplineInterpo2(X, Y):
+def calculateCoefficient(aX_data, aY_data, aTable):
+    """
+    Formula of 3 degree spline.
+    P_k = aTable[k]
+    S_k(x) = a_k0 + a_k1(x-x_k) + a_k2(x-x_k)^2 + a_k3(x-x_k)^3
+    Coefficient:
+    a_k0 = Y_k
+    a_k1 = (Y_k+1 - Y_k) / (x_k+1 - x_k) - (x_k+1 - x_k) * ((2 * P_k + P_k+1) / 6)
+    a_k2 = P_k / 2
+    a_k3 = (P_k+1 - P_k) / 6 * (x_k+1 - x_k)
+    """
+    nodeNum = len(aX_data) # number of area between data node
+    coefficient = np.zeros((nodeNum, 4))
+    for index in range(nodeNum):
+        if index == nodeNum-1:
+            coefficient[index][0] = aY_data[index]
+            coefficient[index][1] = 0
+            coefficient[index][2] = 0
+            coefficient[index][3] = 0
+            continue
+        coefficient[index][0] = aY_data[index]
+        coefficient[index][1] = (aY_data[index+1]-aY_data[index]) / (aX_data[index+1]-aX_data[index]) \
+                                - (aX_data[index+1]-aX_data[index]) * (2*aTable[index]+aTable[index+1]) / 6
+        coefficient[index][2] = aTable[index] / 2
+        coefficient[index][3] = (aTable[index+1]-aTable[index]) / (6 * (aX_data[index+1]-aX_data[index]))
+    return coefficient
+
+def doInterpolation(aCo, aGap):  # aGap: aX_pre-aX_data
+    y = aCo[0] + aCo[1]*aGap + aCo[2]*np.power(aGap, 2) + aCo[3]*np.power(aGap, 3)
+    return y
+
+def interpolateEveryPoint(aX_data, aY_data, aCoefficient, aX_pre, aThreshold):
+    preY = np.zeros_like(aX_pre)
+    for preIndex, preX in enumerate(aX_pre):
+        for nodeIndex, nodeX in enumerate(aX_data):
+            if nodeIndex == 0:
+                continue
+            if preX >= nodeX - aThreshold and preX <= nodeX + aThreshold:
+                preY[preIndex] = aY_data[nodeIndex]
+                continue
+            if (aX_data[nodeIndex-1] <= preX) and (aX_data[nodeIndex] >= preX):
+                preY[preIndex] = doInterpolation(aCoefficient[nodeIndex-1], preX - aX_data[nodeIndex-1])
+                continue
+    return preY
+
+
+def BSplineInterpo2(X, Y, aX_pre, aThreshold):
     # Calculate P_k list
-    Table = createTable(X, Y, (Y[1]-Y[0])/(X[1]-X[0]), (Y[4]-Y[3])/(X[4]-X[3]))
-    return interp(X, Y, Table)
+    Table = createTable(X, Y, (Y[1]-Y[0])/(X[1]-X[0]), (Y[-1]-Y[-2])/(X[-1]-X[-2]))
+    coefficient = calculateCoefficient(X, Y, Table)
+    y_pre = interpolateEveryPoint(X, Y, coefficient, aX_pre, aThreshold)
+    print(Table)
+    print(coefficient)
+    print(y_pre)
+    #return interp(X, Y, Table)
+    return y_pre
 
 
 if __name__ == '__main__':
-    x_data = [1, 2, 3, 4, 5]
-    y_data = [3, 5, 4, 6, 4]
-    RL = BSplineInterpo2(x_data, y_data)
-    plt.plot(RL[0], RL[1], color="blue")
+    x_data = np.array([1, 2, 3, 4, 5, 8])  # more than 3 data
+    y_data = np.array([3, 5, 4, 6, 4, 9])  # more than 3 data
+    preInterval = 0.1
+    x_predict = np.arange(1, x_data[-1]+0.1, preInterval)
+    y_predict = BSplineInterpo2(x_data, y_data, x_predict, preInterval/100)
+    plt.plot(x_predict, y_predict, color="blue")
     plt.grid(True)
     plt.show()
-

@@ -1,4 +1,4 @@
-from interpolation_book.chapter1 import lagrange_interpolation as lag
+from interpolation_book.lagrange import lagrange_interpolation as lag
 import numpy as np
 import matplotlib.pyplot as plt
 

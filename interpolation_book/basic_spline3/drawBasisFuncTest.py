@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from interpolation_book.spline import splineHelper
+from interpolation_book.basic_spline3 import splineHelper
 
 def drawOneBasisFunc(aDegree, aX_data, aBasisFuncIndex, aAx):
     basisFunc = []

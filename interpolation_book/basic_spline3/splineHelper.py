@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from interpolation_book.spline import matrixHelper
+from interpolation_book.basic_spline3 import matrixHelper
 
 
 def createBSplineBasisFunc(aNodeList, i, aDegree, aX):
